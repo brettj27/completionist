@@ -1,6 +1,4 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const createBtn = document.getElementById("createGameBtn");
-    const gameLinkInput = document.getElementById("gameLink");
     const timerDisplay = document.getElementById("timer");
     const statusText = document.querySelector(".statustext");
     const pointValue = document.querySelector(".pointvalue");
@@ -79,24 +77,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
     }
-
-    createBtn.addEventListener("click", async () => {
-        const token = createToken(8);
-        gameToken = token;
-        const db = window.firebaseDB;
-        const { doc, setDoc } = window.firestore;
-
-        const gameRef = doc(db, "games", token);
-        await setDoc(gameRef, {
-            players: {}
-        });
-
-        const link = `${window.location.origin}?game=${token}`;
-        gameLinkInput.value = link;
-        navigator.clipboard.writeText(link);
-
-        startTurn();
-    });
 
     /*
     record player joined
@@ -364,116 +344,3 @@ Element.prototype.appendBefore = function (element) {
 /*
 multiplayer shit
 */
-
-document.getElementById("createGameBtn").addEventListener("click", async () => {
-    const token = createToken(8);
-    window.gameToken = token;
-    const db = window.firebaseDB;
-    const { doc, setDoc } = window.firestore;
-
-    const gameRef = doc(db, "games", token);
-    await setDoc(gameRef, {
-        players: {}
-    });
-
-    const link = `${window.location.origin}?game=${token}`;
-    document.getElementById("gameLink").value = link;
-    navigator.clipboard.writeText(link);
-
-    const isCreator = urlParams.get("creator") === "true";
-
-    if (isCreator) {
-        showNameAndWaitPopup();
-    } else {
-        playerName = prompt("Enter your name:") || "Anonymous";
-        startTurn();
-    }
-
-    function showNameAndWaitPopup() {
-        const overlay = document.createElement("div");
-        overlay.id = "nameWaitPopup";
-        overlay.style.position = "fixed";
-        overlay.style.top = 0;
-        overlay.style.left = 0;
-        overlay.style.width = "100%";
-        overlay.style.height = "100%";
-        overlay.style.background = "#111";
-        overlay.style.display = "flex";
-        overlay.style.flexDirection = "column";
-        overlay.style.alignItems = "center";
-        overlay.style.justifyContent = "center";
-        overlay.style.zIndex = "10000";
-
-        const title = document.createElement("h2");
-        title.innerText = "Enter your name";
-        title.style.color = "gold";
-        title.style.marginBottom = "1rem";
-
-        const input = document.createElement("input");
-        input.type = "text";
-        input.placeholder = "Your name";
-        input.style.padding = "0.75rem";
-        input.style.fontSize = "1rem";
-        input.style.borderRadius = "10px";
-        input.style.border = "none";
-        input.style.marginBottom = "1rem";
-        input.style.textAlign = "center";
-
-        const button = document.createElement("button");
-        button.innerText = "Start Game";
-        button.style.padding = "0.75rem 1.5rem";
-        button.style.borderRadius = "10px";
-        button.style.border = "none";
-        button.style.background = "gold";
-        button.style.fontWeight = "bold";
-        button.style.cursor = "pointer";
-
-        const message = document.createElement("div");
-        message.innerText = "";
-        message.style.color = "white";
-        message.style.marginTop = "1rem";
-
-        button.onclick = () => {
-            const name = input.value.trim();
-            if (!name) {
-                alert("Please enter your name");
-                return;
-            }
-
-            playerName = name;
-            overlay.innerHTML = `<h2 style="color:gold;">Waiting for opponent to join...</h2>`;
-            startTurn();         // start the timer
-            pollForOpponent();   // wait for opponent
-        };
-
-        overlay.appendChild(title);
-        overlay.appendChild(input);
-        overlay.appendChild(button);
-        overlay.appendChild(message);
-
-        document.body.appendChild(overlay);
-    }
-
-    function hideWaitingPopup() {
-        const popup = document.getElementById("nameWaitPopup");
-        if (popup) popup.remove();
-    }
-
-    function pollForOpponent() {
-        const db = window.firebaseDB;
-        const { doc, getDoc } = window.firestore;
-        const gameRef = doc(db, "games", gameToken);
-
-        const interval = setInterval(async () => {
-            const snapshot = await getDoc(gameRef);
-            if (snapshot.exists()) {
-                const players = snapshot.data().players || {};
-                if (Object.keys(players).length >= 2) {
-                    clearInterval(interval);
-                    hideWaitingPopup();
-                }
-            }
-        }, 2000);
-    }
-
-}); 

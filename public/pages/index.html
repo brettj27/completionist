@@ -154,9 +154,8 @@
                 });
                 console.log("✅ Game created and written to Firestore");
 
-                const link = `${window.location.origin}/game.html?game=${token}&creator=true`;
-                navigator.clipboard.writeText(link);
-                document.getElementById("gameLinkText").innerText = link;
+                navigator.clipboard.writeText(token);
+                document.getElementById("gameLinkText").innerText = token;
                 document.getElementById("waitingModal").style.display = "flex";
 
                 db.collection("games").doc(token).onSnapshot((docSnap) => {
@@ -166,6 +165,7 @@
                     if (Object.keys(players).length === 2) {
                         console.log("🎉 Two players joined, redirecting!");
                         window.location.href = `${window.location.origin}/game.html?game=${token}&creator=true&name=${encodeURIComponent(name)}`;
+                        alert('Two players joined!');
                     }
                 });
 
@@ -210,6 +210,7 @@
             await gameRef.set({ players }, { merge: true });
 
             window.location.href = `game.html?game=${code}&name=${encodeURIComponent(name)}`;
+            alert("Two players joined!");
         });
 
     </script>
