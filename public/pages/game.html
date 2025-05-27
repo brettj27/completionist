@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Completionist</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header class="header">
+    <p class="title" id="title">Completionist</p>
+  </header>
+
+  <p class="status" id="status"><span class="statustext"></span></p>
+
+  <div class="bubble_row">
+    <p id="bubble_0" class="placeholder"></p>
+    <p id="bubble_last" class="placeholder"></p>
+    <div class="wordwrap">
+      <p id="wordsfound" class="wordsfound">You have found <span class="wordsfoundam">0</span> words</p>
+      <div id="break1" class="break1"></div>
+    </div>
+    <div class="points"><span class="pointvalue">0</span> points</div>
+  </div>
+
+  <div id="gameControls">
+    <button id="createGameBtn">Create Game</button>
+    <input id="gameLink" readonly placeholder="Game link will appear here">
+  </div>
+  <!-- Firebase Setup (INLINE) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+    import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDShSpXEpbkpODpmVNVma8_dUm2KEySqfg",
+      authDomain: "completionist-77079.firebaseapp.com",
+      projectId: "completionist-77079",
+      storageBucket: "completionist-77079.appspot.com",
+      messagingSenderId: "367629233488",
+      appId: "1:367629233488:web:de949b12bb3b33cc439055",
+      measurementId: "G-15MLW1XWR1"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Make Firebase available to script.js
+    window.firebaseDB = db;
+    window.firestore = { doc, setDoc, getDoc, onSnapshot };
+  </script>
+
+  <!-- Game Logic -->
+  <script src="./script.js"></script>
+  
+</body>
+</html>

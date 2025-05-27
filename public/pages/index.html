@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Word Game Lobby</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #121212;
+            color: white;
+            text-align: center;
+            padding: 3rem;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: gold;
+        }
+
+        .btn {
+            background: gold;
+            color: black;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 1rem;
+            transition: 0.3s;
+        }
+
+        .btn:hover {
+            background: orange;
+        }
+
+        .inputBox {
+            margin-top: 2rem;
+        }
+
+        input {
+            padding: 0.75rem;
+            font-size: 1rem;
+            border-radius: 8px;
+            border: none;
+            width: 200px;
+            text-align: center;
+            margin-right: 10px;
+        }
+
+        .footer {
+            margin-top: 4rem;
+            font-size: 0.9rem;
+            color: #888;
+        }
+
+        #waitingModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 10000;
+        }
+
+        #waitingModal h2 {
+            color: gold;
+        }
+
+        #gameLinkText {
+            margin-top: 1rem;
+            background: white;
+            color: black;
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+
+    <!-- Firebase scripts -->
+    <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore-compat.js"></script>
+    <script>
+        // 🔐 Replace with your Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyDShSpXEpbkpODpmVNVma8_dUm2KEySqfg",
+            authDomain: "completionist-77079.firebaseapp.com",
+            projectId: "completionist-77079",
+            storageBucket: "completionist-77079.appspot.com",
+            messagingSenderId: "367629233488",
+            appId: "1:367629233488:web:de949b12bb3b33cc439055",
+            measurementId: "G-15MLW1XWR1"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+    </script>
+</head>
+
+<body>
+
+    <h1>🔡 Word Game Lobby</h1>
+    <p>Create or join a fast-paced word battle!</p>
+
+    <button id="createGameBtn" class="btn">🎮 Create Game</button>
+
+    <div class="inputBox">
+        <input id="joinInput" placeholder="Enter Game Code">
+        <button id="joinGameBtn" class="btn">Join Game</button>
+    </div>
+
+    <div class="footer">Built for fun — multiplayer word challenge</div>
+
+    <!-- Modal -->
+    <div id="waitingModal">
+        <h2>Waiting for opponent to join...</h2>
+        <p>Share this link:</p>
+        <div id="gameLinkText">(Generating...)</div>
+    </div>
+
+    <script>
+        function createToken(length) {
+            const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+            let token = "";
+            for (let i = 0; i < length; i++) {
+                token += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return token;
+        }
+
+        document.getElementById("createGameBtn").addEventListener("click", async () => {
+            const name = prompt("Enter your name:");
+            if (!name) return;
+
+            const token = createToken(8);
+            console.log("🔑 Creating game with token:", token);
+
+            const gameRef = db.collection("games").doc(token);
+
+            try {
+                await gameRef.set({
+                    players: {
+                        [name]: { words: [], score: 0, finished: false }
+                    }
+                });
+                console.log("✅ Game created and written to Firestore");
+
+                const link = `${window.location.origin}/game.html?game=${token}&creator=true`;
+                navigator.clipboard.writeText(link);
+                document.getElementById("gameLinkText").innerText = link;
+                document.getElementById("waitingModal").style.display = "flex";
+
+                db.collection("games").doc(token).onSnapshot((docSnap) => {
+                    const players = docSnap.data().players || {};
+                    console.log("📡 Listening to players:", players);
+
+                    if (Object.keys(players).length === 2) {
+                        console.log("🎉 Two players joined, redirecting!");
+                        window.location.href = `${window.location.origin}/game.html?game=${token}&creator=true&name=${encodeURIComponent(name)}`;
+                    }
+                });
+
+            } catch (err) {
+                console.error("❌ Failed to write to Firestore:", err);
+                alert("Could not create game. Check the console for errors.");
+            }
+        });
+
+
+
+        document.getElementById("joinGameBtn").addEventListener("click", async () => {
+            const code = document.getElementById("joinInput").value.trim();
+            if (code.length < 4) {
+                alert("Please enter a valid game code.");
+                return;
+            }
+
+            const name = prompt("Enter your name:");
+            if (!name) return;
+
+            console.log("⚠️ Token from URL:", code);
+
+            const gameRef = db.collection("games").doc(code);
+            const docSnap = await gameRef.get();
+
+            if (!docSnap.exists) {
+                alert("Game not found.");
+                return;
+            }
+
+            const data = docSnap.data();
+            const players = data.players || {};
+
+            if (Object.keys(players).length >= 2) {
+                alert("This game already has two players.");
+                return;
+            }
+
+            // Add self to game
+            players[name] = { words: [], score: 0, finished: false };
+            await gameRef.set({ players }, { merge: true });
+
+            window.location.href = `game.html?game=${code}&name=${encodeURIComponent(name)}`;
+        });
+
+    </script>
+
+</body>
+
+</html>
