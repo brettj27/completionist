@@ -4,8 +4,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const pointValue = document.querySelector(".pointvalue");
     const totalWords = document.querySelector(".wordsfoundam");
 
-    let playerName = prompt("Enter your name:") || "Anonymous";
-    let gameToken = null;
+    const params = new URLSearchParams(window.location.search);
+    const gameToken = params.get("game");
+    const playerName = params.get("name");
+    const isCreator = params.get("creator") === "true";
+    //let playerName = params.get("name")
+    //    || localStorage.getItem("playerName")
+    //    || prompt("Enter your name:");
+
+    console.log("Player name is:", playerName + "\nGame token:", gameToken + "\nCreator?", isCreator);
+
+    //let gameToken = localStorage.getItem("game");
     let points = 0;
     let timeLeft = 30;
     let timerInterval;
@@ -26,6 +35,8 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("bubble_0").innerText = startLet;
     document.getElementById("bubble_last").innerText = endLet;
 
+    startTurn();
+
     function createToken(length) {
         const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
         let token = "";
@@ -42,12 +53,14 @@ document.addEventListener("DOMContentLoaded", () => {
             timerDisplay.innerText = timeLeft;
             if (timeLeft <= 0) {
                 clearInterval(timerInterval);
+                alert(gameToken);
                 endTurn();
             }
         }, 1000);
     }
 
     async function endTurn() {
+        console.log("turn ended");
         const db = window.firebaseDB;
         const { doc, getDoc, setDoc } = window.firestore;
         const gameRef = doc(db, "games", gameToken);
@@ -71,7 +84,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 playerKeys.forEach(p => {
                     resultText += `${p}: ${players[p].score} points\nWords: ${players[p].words.join(", ")}\n\n`;
                 });
-                alert("Game Over!\n" + resultText);
+                const text = resultText || "No results to show";
+                alert("Game Over!\n" + text);
             } else {
                 alert("Your turn is over! Waiting for the other player...");
             }
@@ -82,38 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
     record player joined
     */
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const tokenFromUrl = urlParams.get("game");
-    if (tokenFromUrl) {
-        gameToken = tokenFromUrl;
-        startTurn();
 
-        // ✅ Now that gameToken is known, safely do Firestore logic:
-        const db = window.firebaseDB;
-        const { doc, getDoc, setDoc } = window.firestore;
-        const gameRef = doc(db, "games", gameToken);
-
-        (async () => {
-            const snapshot = await getDoc(gameRef);
-            if (snapshot.exists()) {
-                const data = snapshot.data();
-                const players = data.players || {};
-
-                if (!players[playerName]) {
-                    players[playerName] = {
-                        words: [],
-                        score: 0,
-                        finished: false
-                    };
-                    await setDoc(gameRef, { players }, { merge: true });
-
-                    console.log(`${playerName} joined game ${gameToken}`);
-                } else {
-                    console.log(`${playerName} reloaded game ${gameToken}`);
-                }
-            }
-        })();
-    }
 
     /* 
     typing functionality
@@ -340,7 +323,3 @@ Element.prototype.appendAfter = function (element) {
 Element.prototype.appendBefore = function (element) {
     element.parentNode.insertBefore(this, element);
 }, false;
-
-/*
-multiplayer shit
-*/
